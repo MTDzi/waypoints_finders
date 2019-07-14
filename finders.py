@@ -1,3 +1,7 @@
+from operator import itemgetter
+import numpy as np
+
+
 def find_waypoints(
     frame, horizontal_stretch, statistic,
     max_angle=30*np.pi/180, num_angles=24, steps=1, step_len=20,
