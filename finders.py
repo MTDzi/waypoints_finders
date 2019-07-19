@@ -4,7 +4,7 @@ import numpy as np
 
 def find_waypoints(
     frame, horizontal_stretch, statistic,
-    max_angle=30*np.pi/180, num_angles=24, steps=1, step_len=20,
+    max_angle=60*np.pi/180, num_angles=24, steps=1, step_len=20,
     sphere_radius=35, draw_waypoints=True, print_debug=False,
 ):
     # This is the center of the frame and where the car is
@@ -16,11 +16,14 @@ def find_waypoints(
     point = starting_point
     for step in range(steps):
         scores = []
+        angles = angle + np.arange(-num_angles, num_angles+1) * max_angle / num_angles
+        new_positions = np.expand_dims(point, 1) + step_len * np.array([np.sin(angles), np.cos(angles)])
+
         for angle_idx in range(-num_angles, num_angles+1):
-            # We're iterating over candidate angles that for a cone of [-40, 40] degrees
-            angle_i = angle + angle_idx * max_angle / num_angles
-            vector = step_len * np.array([np.sin(angle_i), horizontal_stretch*np.cos(angle_i)])
-            new_position = point + vector
+            # We're iterating over candidate angles that are in a cone of [-max_angle, max_angle] degrees
+            i = angle_idx + num_angles
+            angle_i = angles[i]
+            new_position = new_positions[i]
 
             lower_bound, upper_bound = (
                 (new_position - sphere_radius).astype(int),
@@ -30,6 +33,7 @@ def find_waypoints(
                 np.arange(max(0, lower_bound[0]), min(frame.shape[0], upper_bound[0])),
                 np.arange(max(0, lower_bound[1]), min(frame.shape[1], upper_bound[1])),
             )
+            import pdb; pdb.set_trace()
             xy = np.array([x.flatten(), y.flatten()]).T
 
             which_in_sphere = (np.linalg.norm(xy - new_position, axis=1) < sphere_radius)
@@ -39,7 +43,7 @@ def find_waypoints(
 
             if draw_waypoints:
                 x_idx, y_idx = np.round(new_position).astype(int)
-                frame[x_idx-1:x_idx+1, y_idx-1:y_idx+1] = score
+                frame[x_idx-4:x_idx+4, y_idx-4:y_idx+4] = score
 
         # We choose the waypoint that has the best score, but if two waypoints
         #  have the same score, we choose the one that's closest to going the
@@ -54,7 +58,7 @@ def find_waypoints(
         if draw_waypoints:
             x_idx, y_idx = np.round(best_new_position).astype(int)
             # FIXME: sometimes a waypoint goes around the frame
-            frame[x_idx-1:x_idx+1, y_idx-1:y_idx+1] += 1
+            frame[x_idx-4:x_idx+4, y_idx-4:y_idx+4] += 1
 
         if print_debug:
             print('score\t\tangle_i')
